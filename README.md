@@ -15,7 +15,7 @@ Example adding the numbers one and two:
 
 ```
 $ cargo run
-> 1 2 +
+1 2 +
 3
 ```
 
@@ -25,7 +25,7 @@ More complicated expression:
 
 ```
 $ cargo run
-> 1 2 + 3 + 6 *
+1 2 + 3 + 6 *
 36
 ```
 
