@@ -30,6 +30,8 @@ lazy_static! {
         map.insert("sin", funcs::sin);
         map.insert("cos", funcs::cos);
         map.insert("tan", funcs::tan);
+        map.insert("sqrt", funcs::sqrt);
+        map.insert("ln", funcs::ln);
         map
     };
     pub static ref BINARY_FNS: HashMap<&'static str, fn(Float, Float) -> Float> = {
@@ -59,6 +61,14 @@ mod funcs {
 
     pub fn tan(x: Float) -> Float {
         x.tan()
+    }
+
+    pub fn sqrt(x: Float) -> Float {
+        x.sqrt()
+    }
+
+    pub fn ln(x: Float) -> Float {
+        x.ln()
     }
 
     // BINARY
