@@ -74,6 +74,7 @@ fn handle_line(context: &mut Context, line: String) -> Result<Option<Vec<Float>>
 fn parse_symbol_def(context: &Context, tokens: &Vec<&str>) -> Result<(String, Symbol), CalcError> {
     let mut iter = tokens.iter().cloned().skip(1);
     let name = iter.next().ok_or(CalcError::ParseError)?.to_owned();
+    // TODO: Make sure variables do not call functions of the same name
     match iter.next() {
         Some("of") => {
             // TODO: Unnessecary allocation of memory
@@ -90,13 +91,23 @@ fn parse_symbol_def(context: &Context, tokens: &Vec<&str>) -> Result<(String, Sy
             let mut temp_ctx = context.clone();
             temp_ctx.symbols.extend(func_args);
 
-            let expr = temp_ctx.parse_expr(iter.collect())?;
+            let tokens: Vec<&str> = iter.collect();
+            if tokens.contains(&name.as_str()) {
+                return Err(CalcError::RecursiveFunction);
+            }
+            let expr = temp_ctx.parse_expr(tokens)?;
 
             Ok((name, Symbol::Function(FnSymbol { args, expr })))
         }
         Some("=") => {
             // TODO: Assert that  only one value is returned (no multivariable defs yet)
-            let expr = context.parse_expr(iter.collect())?;
+            let tokens: Vec<&str> = iter.collect();
+            if tokens.contains(&name.as_str())
+                && matches!(context.symbols.get(&name), Some(Symbol::Function(_)))
+            {
+                return Err(CalcError::VariableFunctionCall);
+            }
+            let expr = context.parse_expr(tokens)?;
             let result = context.eval_expr(&expr)?[0].clone();
             Ok((name, Symbol::Variable(result)))
         }

@@ -124,6 +124,8 @@ pub enum CalcError {
     UnexpectedToken(String),
     NotEnoughStack,
     RedefinedConstant(String),
+    RecursiveFunction,
+    VariableFunctionCall,
 }
 
 impl fmt::Display for CalcError {
@@ -134,6 +136,10 @@ impl fmt::Display for CalcError {
             CalcError::NotEnoughStack => write!(f, "not enough values on stack"),
             CalcError::RedefinedConstant(name) => {
                 write!(f, "name '{}' refers to predefined constant", name)
+            }
+            CalcError::RecursiveFunction => write!(f, "functions cannot call themselves"),
+            CalcError::VariableFunctionCall => {
+                write!(f, "variables cannot refer to a function of the same name")
             }
         }
     }
