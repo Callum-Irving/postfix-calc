@@ -29,6 +29,7 @@ lazy_static! {
         map.insert("*", funcs::multiply);
         map.insert("/", funcs::divide);
         map.insert("pow", funcs::pow);
+        map.insert("log", funcs::log);
         map
     };
 }
@@ -69,6 +70,10 @@ mod funcs {
 
     pub fn pow(base: Float, exp: Float) -> Float {
         base.pow(exp)
+    }
+
+    pub fn log(x: Float, base: Float) -> Float {
+        base.log10() / x.log10()
     }
 }
 
