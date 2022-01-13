@@ -1,4 +1,4 @@
-# Postfix Math Parser
+# Postfix Calculator
 
 ## What is postfix notation?
 
