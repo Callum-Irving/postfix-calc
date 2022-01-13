@@ -8,7 +8,7 @@ use std::fmt;
 
 #[derive(Clone)]
 pub struct Context {
-    symbols: HashMap<String, Symbol>,
+    pub symbols: HashMap<String, Symbol>,
 }
 
 impl Context {
@@ -29,7 +29,7 @@ impl Context {
             {
                 expr.tokens.push(Token::Symbol(token.to_owned()));
             } else {
-                return Err(CalcError::ParseError);
+                return Err(CalcError::UnexpectedToken(token.to_owned()));
             }
         }
         Ok(expr)
@@ -71,12 +71,14 @@ impl Context {
                                 let args = stack.split_off(stack.len() - func.args.len());
 
                                 // Create temporary context
+                                // TODO: inefficient
                                 let mut temp_ctx = self.clone();
                                 let mut tuples = func
                                     .args
                                     .iter()
                                     .cloned()
                                     .zip(args.into_iter().map(|num| Symbol::Variable(num)));
+
                                 temp_ctx.symbols.extend(&mut tuples);
 
                                 let mut result = temp_ctx.eval_expr(&func.expr).unwrap();
@@ -86,7 +88,6 @@ impl Context {
                                 stack.push(num.clone());
                             }
                         }
-                        todo!();
                     } else {
                         return Err(CalcError::UnexpectedToken(name.into()));
                     }
@@ -94,6 +95,14 @@ impl Context {
             }
         }
         Ok(stack)
+    }
+
+    pub fn add_symbol(&mut self, name: String, symbol: Symbol) -> Result<(), CalcError> {
+        if LITERALS.get(name.as_str()).is_some() || get_fn(&name).is_some() {
+            return Err(CalcError::RedefinedConstant(name));
+        }
+        self.symbols.insert(name, symbol);
+        Ok(())
     }
 }
 
@@ -105,8 +114,8 @@ pub enum Symbol {
 
 #[derive(Clone)]
 pub struct FnSymbol {
-    args: Vec<String>, // Arg names
-    expr: Expr,
+    pub args: Vec<String>, // Arg names
+    pub expr: Expr,
 }
 
 #[derive(Debug)]
@@ -114,14 +123,18 @@ pub enum CalcError {
     ParseError,
     UnexpectedToken(String),
     NotEnoughStack,
+    RedefinedConstant(String),
 }
 
 impl fmt::Display for CalcError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             CalcError::ParseError => write!(f, "could not parse expression"),
-            CalcError::UnexpectedToken(token) => write!(f, "unexpected token: {}", token),
-            &CalcError::NotEnoughStack => write!(f, "not enough values on stack"),
+            CalcError::UnexpectedToken(token) => write!(f, "unexpected token: '{}'", token),
+            CalcError::NotEnoughStack => write!(f, "not enough values on stack"),
+            CalcError::RedefinedConstant(name) => {
+                write!(f, "name '{}' refers to predefined constant", name)
+            }
         }
     }
 }
