@@ -9,12 +9,17 @@ use std::fmt;
 #[derive(Clone)]
 pub struct Context {
     pub symbols: HashMap<String, Symbol>,
+    pub ans: Vec<Float>,
 }
 
 impl Context {
     pub fn new() -> Context {
         Context {
-            symbols: HashMap::new(),
+            symbols: HashMap::from([(
+                "ans".to_owned(),
+                Symbol::Variable(vec![Float::with_val(63, 0)]),
+            )]),
+            ans: vec![Float::with_val(63, 0)],
         }
     }
 
@@ -35,7 +40,7 @@ impl Context {
         Ok(expr)
     }
 
-    pub fn eval_expr(&self, expr: &Expr) -> Result<Vec<Float>, CalcError> {
+    pub fn eval_expr(&mut self, expr: &Expr) -> Result<Vec<Float>, CalcError> {
         let mut stack: Vec<Float> = vec![];
         for token in &expr.tokens {
             match token {
@@ -73,11 +78,10 @@ impl Context {
                                 // Create temporary context
                                 // TODO: inefficient
                                 let mut temp_ctx = self.clone();
-                                let mut tuples = func
-                                    .args
-                                    .iter()
-                                    .cloned()
-                                    .zip(args.into_iter().map(|num| Symbol::Variable(num)));
+                                let mut tuples =
+                                    func.args.iter().cloned().zip(
+                                        args.into_iter().map(|num| Symbol::Variable(vec![num])),
+                                    );
 
                                 temp_ctx.symbols.extend(&mut tuples);
 
@@ -85,7 +89,7 @@ impl Context {
                                 stack.append(&mut result);
                             }
                             Symbol::Variable(num) => {
-                                stack.push(num.clone());
+                                stack.append(&mut num.clone());
                             }
                         }
                     } else {
@@ -94,6 +98,8 @@ impl Context {
                 }
             }
         }
+        self.symbols
+            .insert("ans".to_owned(), Symbol::Variable(stack.clone()));
         Ok(stack)
     }
 
@@ -109,7 +115,7 @@ impl Context {
 #[derive(Clone)]
 pub enum Symbol {
     Function(FnSymbol),
-    Variable(Float),
+    Variable(Vec<Float>),
 }
 
 #[derive(Clone)]
@@ -126,6 +132,7 @@ pub enum CalcError {
     RedefinedConstant(String),
     RecursiveFunction,
     VariableFunctionCall,
+    MultipleVariableDef,
 }
 
 impl fmt::Display for CalcError {
@@ -140,6 +147,12 @@ impl fmt::Display for CalcError {
             CalcError::RecursiveFunction => write!(f, "functions cannot call themselves"),
             CalcError::VariableFunctionCall => {
                 write!(f, "variables cannot refer to a function of the same name")
+            }
+            CalcError::MultipleVariableDef => {
+                write!(
+                    f,
+                    "variable definitions must evaluate to exactly one number"
+                )
             }
         }
     }

@@ -13,6 +13,9 @@ fn main() {
         print!("> ");
         stdout().flush().unwrap();
         let mut input = String::new();
+
+        // TODO: Display messages when functions or variables are created
+
         match stdin().read_line(&mut input) {
             Ok(_) => match handle_line(&mut context, input) {
                 Ok(Some(results)) => display_nums(results),
@@ -60,7 +63,10 @@ fn handle_line(context: &mut Context, line: String) -> Result<Option<Vec<Float>>
 
     let ret = if tokens.get(0) == Some(&"let") {
         let (name, symbol) = parse_symbol_def(context, &tokens)?;
-        context.add_symbol(name, symbol)?;
+        context.add_symbol(name, symbol.clone())?;
+        if let Symbol::Variable(num) = symbol {
+            return Ok(Some(num));
+        }
         None
     } else {
         let expr = context.parse_expr(tokens)?;
@@ -71,10 +77,12 @@ fn handle_line(context: &mut Context, line: String) -> Result<Option<Vec<Float>>
     Ok(ret)
 }
 
-fn parse_symbol_def(context: &Context, tokens: &Vec<&str>) -> Result<(String, Symbol), CalcError> {
+fn parse_symbol_def(
+    context: &mut Context,
+    tokens: &Vec<&str>,
+) -> Result<(String, Symbol), CalcError> {
     let mut iter = tokens.iter().cloned().skip(1);
     let name = iter.next().ok_or(CalcError::ParseError)?.to_owned();
-    // TODO: Make sure variables do not call functions of the same name
     match iter.next() {
         Some("of") => {
             // TODO: Unnessecary allocation of memory
@@ -87,7 +95,7 @@ fn parse_symbol_def(context: &Context, tokens: &Vec<&str>) -> Result<(String, Sy
             }
             let func_args = args
                 .iter()
-                .map(|name| (name.clone(), Symbol::Variable(Float::with_val(1, 0))));
+                .map(|name| (name.clone(), Symbol::Variable(vec![Float::with_val(1, 0)])));
             let mut temp_ctx = context.clone();
             temp_ctx.symbols.extend(func_args);
 
@@ -100,7 +108,6 @@ fn parse_symbol_def(context: &Context, tokens: &Vec<&str>) -> Result<(String, Sy
             Ok((name, Symbol::Function(FnSymbol { args, expr })))
         }
         Some("=") => {
-            // TODO: Assert that  only one value is returned (no multivariable defs yet)
             let tokens: Vec<&str> = iter.collect();
             if tokens.contains(&name.as_str())
                 && matches!(context.symbols.get(&name), Some(Symbol::Function(_)))
@@ -108,7 +115,10 @@ fn parse_symbol_def(context: &Context, tokens: &Vec<&str>) -> Result<(String, Sy
                 return Err(CalcError::VariableFunctionCall);
             }
             let expr = context.parse_expr(tokens)?;
-            let result = context.eval_expr(&expr)?[0].clone();
+            let result = context.eval_expr(&expr)?;
+            // if result.len() != 1 {
+            //     return Err(CalcError::MultipleVariableDef);
+            // }
             Ok((name, Symbol::Variable(result)))
         }
         _ => Err(CalcError::ParseError),

@@ -3,17 +3,27 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
+// TODO: Synchronize this throughout crate
 const PRECISION: u32 = 63;
 
 lazy_static! {
     pub static ref LITERALS: HashMap<&'static str, Float> = {
-        HashMap::from([(
-            "pi",
-            Float::with_val(
-                PRECISION,
-                3.1415926535897932384626433832795028841971693993751058209749445923,
+        HashMap::from([
+            (
+                "pi",
+                Float::with_val(
+                    PRECISION,
+                    3.1415926535897932384626433832795028841971693993751058209749445923,
+                ),
             ),
-        )])
+            (
+                "e",
+                Float::with_val(
+                    PRECISION,
+                    2.7182818284590452353602874713526624977572470936999595749669676277,
+                ),
+            ),
+        ])
     };
     pub static ref UNARY_FNS: HashMap<&'static str, fn(Float) -> Float> = {
         let mut map: HashMap<&'static str, fn(Float) -> Float> = HashMap::new();
